@@ -1,7 +1,9 @@
-import { Show, onMount } from 'solid-js';
+import { Show, createEffect, createSignal, onMount } from 'solid-js';
 import { Avatar } from '../avatars/Avatar';
 import { Marked } from '@ts-stack/markdown';
-import { sendFileDownloadQuery } from '@/queries/sendMessageQuery';
+import { sendFileDownloadQuery, sendTextToSpeechQuery } from '@/queries/sendMessageQuery';
+import { PlayIcon } from '../icons/PlayIcon';
+import { PauseIcon } from '../icons/PauseIcon';
 
 type Props = {
   message: string;
@@ -20,6 +22,10 @@ Marked.setOptions({ isNoP: true });
 
 export const BotBubble = (props: Props) => {
   let botMessageEl: HTMLDivElement | undefined;
+
+  const [isPlaying, setIsPlaying] = createSignal(false);
+  const [audioBlob, setAudioBlob] = createSignal<Blob>();
+  const [isLoadingSpeech, setIsLoadingSpeech] = createSignal(false);
 
   const downloadFile = async (fileAnnotation: any) => {
     try {
@@ -63,6 +69,69 @@ export const BotBubble = (props: Props) => {
     }
   });
 
+  let audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+
+  function playBlob(blob: Blob) {
+    audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const reader = new FileReader();
+    reader.onload = function () {
+      const buffer = reader.result as ArrayBuffer;
+
+      // Step 3: Decode the audio data
+      audioContext.decodeAudioData(buffer, function (decodedData) {
+        // Step 4: Create an audio buffer source node
+        const source = audioContext.createBufferSource();
+        source.buffer = decodedData;
+
+        // Step 5: Connect the source to the audio context's destination (speakers)
+        source.connect(audioContext.destination);
+
+        // Step 6: Start playing the sound
+        source.start();
+
+        source.onended = () => {
+          setIsPlaying(false);
+        };
+        setIsPlaying(true);
+      });
+    };
+
+    reader.readAsArrayBuffer(blob);
+  }
+
+  async function stopPlayingBlob() {
+    if (audioContext.state === 'running' || audioContext.state === 'suspended') {
+      setIsPlaying(false);
+      audioContext.suspend();
+    }
+  }
+
+  async function handlePlay() {
+    try {
+      setIsLoadingSpeech(true);
+      let data: Blob;
+      if (audioBlob()) {
+        data = audioBlob() as Blob;
+      } else {
+        const response = await sendTextToSpeechQuery({ text: props.message });
+        data = response.data;
+        setAudioBlob(() => data);
+      }
+
+      playBlob(data as Blob);
+    } finally {
+      setIsLoadingSpeech(false);
+    }
+  }
+
+  function handlePlayOrPause() {
+    if (isPlaying()) {
+      return stopPlayingBlob();
+    } else {
+      handlePlay();
+    }
+  }
+
   return (
     <div class="flex justify-start mb-2 items-start host-container" style={{ 'margin-right': '50px' }}>
       <Show when={props.showAvatar}>
@@ -78,6 +147,19 @@ export const BotBubble = (props: Props) => {
           'border-radius': '6px',
         }}
       />
+      <div class="place-self-center cursor-pointer ml-2" onClick={handlePlayOrPause}>
+        {isLoadingSpeech() ? (
+          <div class="flex items-center">
+            <div class="w-1 h-1 mr-1 rounded-full bubble1" />
+            <div class="w-1 h-1 mr-1 rounded-full bubble2" />
+            <div class="w-1 h-1 rounded-full bubble3" />
+          </div>
+        ) : isPlaying() ? (
+          <PauseIcon />
+        ) : (
+          <PlayIcon />
+        )}
+      </div>
     </div>
   );
 };

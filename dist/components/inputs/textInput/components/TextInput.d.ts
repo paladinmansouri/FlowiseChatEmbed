@@ -7,6 +7,7 @@ type Props = {
     fontSize?: number;
     disabled?: boolean;
     onSubmit: (value: string) => void;
+    setDisabled: (vaL: boolean) => void;
 };
 export declare const TextInput: (props: Props) => import("solid-js").JSX.Element;
 export {};

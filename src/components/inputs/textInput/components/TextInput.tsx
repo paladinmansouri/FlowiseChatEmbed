@@ -4,6 +4,7 @@ import { createSignal, createEffect, onMount } from 'solid-js';
 import { SendButton } from '@/components/SendButton';
 import { RecordButton } from '../../../RecordButton';
 import { RecordRTCPromisesHandler } from 'recordrtc';
+import { sendSpeechToTextQuery } from '@/queries/sendMessageQuery';
 
 type Props = {
   placeholder?: string;
@@ -14,6 +15,7 @@ type Props = {
   fontSize?: number;
   disabled?: boolean;
   onSubmit: (value: string) => void;
+  setDisabled: (vaL: boolean) => void;
 };
 
 const defaultBackgroundColor = '#ffffff';
@@ -49,6 +51,13 @@ export const TextInput = (props: Props) => {
     if (!isMobile() && inputRef) inputRef.focus();
   });
 
+  async function submitBySpeech(speech: Blob) {
+    props.setDisabled(true);
+    const text = await sendSpeechToTextQuery({ speech });
+    props.onSubmit(text);
+    props.setDisabled(false);
+  }
+
   async function stopRecording() {
     const rec = recorder();
     if (!rec) {
@@ -56,8 +65,8 @@ export const TextInput = (props: Props) => {
     }
     await rec.stopRecording();
     const blob = await rec.getBlob();
-    console.log({ blob });
     setIsRecording(false);
+    return submitBySpeech(blob);
   }
 
   async function startRecording() {
@@ -70,6 +79,7 @@ export const TextInput = (props: Props) => {
     );
     await recorder()?.startRecording();
     setIsRecording(true);
+    props.setDisabled(true);
   }
 
   function handleRecordToggle() {
@@ -108,7 +118,6 @@ export const TextInput = (props: Props) => {
       <RecordButton
         buttonColor={props.sendButtonColor}
         type="button"
-        isDisabled={props.disabled}
         class="my-2 ml-2"
         on:click={submit}
         isRecording={isRecording()}

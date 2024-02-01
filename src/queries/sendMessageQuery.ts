@@ -42,3 +42,31 @@ export const sendFileDownloadQuery = ({ apiHost = 'http://localhost:3000', body 
     body,
     type: 'blob',
   });
+
+export const sendSpeechToTextQuery = async ({ speech }: { speech: Blob }) => {
+  const apiUrl = (window as unknown as { speechToTextEndpointUrl: string }).speechToTextEndpointUrl;
+  if (!apiUrl) {
+    throw new Error('api endpoint url for speech to text is not provided');
+  }
+  const formData = new FormData();
+  formData.append('file', speech);
+  const response = await fetch(apiUrl, {
+    method: 'POST',
+    body: formData,
+  });
+  const responseJson = await response.json();
+  return responseJson.transcription as string;
+};
+
+export const sendTextToSpeechQuery = async ({ text }: { text: string }) => {
+  const apiUrl = (window as unknown as { textToSpeechEndpointUrl: string }).textToSpeechEndpointUrl;
+  if (!apiUrl) {
+    throw new Error('api endpoint url for text to speech is not provided');
+  }
+  return sendRequest<any>({
+    method: 'POST',
+    url: apiUrl,
+    body: { text },
+    type: 'blob',
+  });
+};

@@ -28,4 +28,13 @@ export declare const sendFileDownloadQuery: ({ apiHost, body }: MessageRequest) 
     data?: any;
     error?: Error | undefined;
 }>;
+export declare const sendSpeechToTextQuery: ({ speech }: {
+    speech: Blob;
+}) => Promise<string>;
+export declare const sendTextToSpeechQuery: ({ text }: {
+    text: string;
+}) => Promise<{
+    data?: any;
+    error?: Error | undefined;
+}>;
 //# sourceMappingURL=sendMessageQuery.d.ts.map

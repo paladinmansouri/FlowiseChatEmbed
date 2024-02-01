@@ -424,6 +424,10 @@ export const Bot = (botProps: BotProps & { class?: string }) => {
     return newSourceDocuments;
   };
 
+  const handleDisableInputsChange = (val: boolean) => {
+    setLoading(val);
+  };
+
   return (
     <>
       <div
@@ -534,6 +538,7 @@ export const Bot = (botProps: BotProps & { class?: string }) => {
             disabled={loading()}
             defaultValue={userInput()}
             onSubmit={handleSubmit}
+            setDisabled={handleDisableInputsChange}
           />
         </div>
         <Show when={messages().length === 1}>

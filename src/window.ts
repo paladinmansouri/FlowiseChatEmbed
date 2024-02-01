@@ -3,18 +3,24 @@ import { observersConfigType } from './components/Bot';
 /* eslint-disable solid/reactivity */
 type BotProps = {
   chatflowid: string;
+  speechToTextEndpointUrl?: string;
+  textToSpeechEndpointUrl?: string;
   apiHost?: string;
   chatflowConfig?: Record<string, unknown>;
   observersConfig?: observersConfigType;
 };
 
 export const initFull = (props: BotProps & { id?: string }) => {
+  (window as any).speechToTextEndpointUrl = props.speechToTextEndpointUrl;
+  (window as any).textToSpeechEndpointUrl = props.textToSpeechEndpointUrl;
   const fullElement = props.id ? document.getElementById(props.id) : document.querySelector('flowise-fullchatbot');
   if (!fullElement) throw new Error('<flowise-fullchatbot> element not found.');
   Object.assign(fullElement, props);
 };
 
 export const init = (props: BotProps) => {
+  (window as any).speechToTextEndpointUrl = props.speechToTextEndpointUrl;
+  (window as any).textToSpeechEndpointUrl = props.textToSpeechEndpointUrl;
   const element = document.createElement('flowise-chatbot');
   Object.assign(element, props);
   document.body.appendChild(element);
