@@ -1,4 +1,4 @@
-import { Show, createEffect, createSignal, onMount } from 'solid-js';
+import { Show, createSignal, onMount } from 'solid-js';
 import { Avatar } from '../avatars/Avatar';
 import { Marked } from '@ts-stack/markdown';
 import { sendFileDownloadQuery, sendTextToSpeechQuery } from '@/queries/sendMessageQuery';
@@ -17,6 +17,7 @@ type Props = {
 
 const defaultBackgroundColor = '#f7f8ff';
 const defaultTextColor = '#303235';
+let audioRef: HTMLAudioElement;
 
 Marked.setOptions({ isNoP: true });
 
@@ -24,7 +25,8 @@ export const BotBubble = (props: Props) => {
   let botMessageEl: HTMLDivElement | undefined;
 
   const [isPlaying, setIsPlaying] = createSignal(false);
-  const [audioBlob, setAudioBlob] = createSignal<Blob>();
+  const [alreadyLoaded, setAlreadyLoaded] = createSignal(false);
+  const [audioResponse, setAudioResponse] = createSignal<Response>();
   const [isLoadingSpeech, setIsLoadingSpeech] = createSignal(false);
 
   const downloadFile = async (fileAnnotation: any) => {
@@ -69,56 +71,61 @@ export const BotBubble = (props: Props) => {
     }
   });
 
-  let audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+  async function playStreamResponse(res: Response) {
+    const audio = audioRef;
+    audio.controls = true;
 
-  function playBlob(blob: Blob) {
-    audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-    const reader = new FileReader();
-    reader.onload = function () {
-      const buffer = reader.result as ArrayBuffer;
+    if (!alreadyLoaded()) {
+      setAlreadyLoaded(true);
+      const mediaSource = new MediaSource();
+      audio.src = URL.createObjectURL(mediaSource);
 
-      // Step 3: Decode the audio data
-      audioContext.decodeAudioData(buffer, function (decodedData) {
-        // Step 4: Create an audio buffer source node
-        const source = audioContext.createBufferSource();
-        source.buffer = decodedData;
+      mediaSource.addEventListener('sourceopen', function () {
+        const sourceBuffer = mediaSource.addSourceBuffer('audio/mpeg'); // Specify the correct MIME type
 
-        // Step 5: Connect the source to the audio context's destination (speakers)
-        source.connect(audioContext.destination);
-
-        // Step 6: Start playing the sound
-        source.start();
-
-        source.onended = () => {
-          setIsPlaying(false);
-        };
-        setIsPlaying(true);
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        const reader = res.body!.getReader();
+        async function push() {
+          const { done, value } = await reader.read();
+          if (done) {
+            mediaSource.endOfStream();
+            return;
+          }
+          sourceBuffer.appendBuffer(value);
+          sourceBuffer.addEventListener('updateend', push, { once: true });
+        }
+        push();
       });
-    };
+    }
 
-    reader.readAsArrayBuffer(blob);
+    audio.currentTime = 0;
+    audio.play();
+    setIsPlaying(true);
+    audio.onended = () => {
+      setIsPlaying(false);
+    };
   }
 
   async function stopPlayingBlob() {
-    if (audioContext.state === 'running' || audioContext.state === 'suspended') {
+    if (!audioRef.paused) {
       setIsPlaying(false);
-      audioContext.suspend();
+      audioRef.pause();
     }
   }
 
   async function handlePlay() {
     try {
       setIsLoadingSpeech(true);
-      let data: Blob;
-      if (audioBlob()) {
-        data = audioBlob() as Blob;
+      let data: Response;
+      if (audioResponse()) {
+        data = audioResponse() as Response;
       } else {
         const response = await sendTextToSpeechQuery({ text: props.message });
-        data = response.data;
-        setAudioBlob(() => data);
+        data = response;
+        setAudioResponse(() => data);
       }
 
-      playBlob(data as Blob);
+      playStreamResponse(data as Response);
     } finally {
       setIsLoadingSpeech(false);
     }
@@ -134,6 +141,7 @@ export const BotBubble = (props: Props) => {
 
   return (
     <div class="flex justify-start mb-2 items-start host-container" style={{ 'margin-right': '50px' }}>
+      <audio ref={audioRef} controls={false} class="hidden" />
       <Show when={props.showAvatar}>
         <Avatar initialAvatarSrc={props.avatarSrc} />
       </Show>

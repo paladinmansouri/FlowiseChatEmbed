@@ -33,8 +33,5 @@ export declare const sendSpeechToTextQuery: ({ speech }: {
 }) => Promise<string>;
 export declare const sendTextToSpeechQuery: ({ text }: {
     text: string;
-}) => Promise<{
-    data?: any;
-    error?: Error | undefined;
-}>;
+}) => Promise<Response>;
 //# sourceMappingURL=sendMessageQuery.d.ts.map

@@ -63,10 +63,11 @@ export const sendTextToSpeechQuery = async ({ text }: { text: string }) => {
   if (!apiUrl) {
     throw new Error('api endpoint url for text to speech is not provided');
   }
-  return sendRequest<any>({
+  const response = await sendRequest<any>({
     method: 'POST',
     url: apiUrl,
     body: { text },
-    type: 'blob',
+    type: 'raw',
   });
+  return response.data as Response;
 };

@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>test</title>
+  </head>
+  <body>
+    <script type="module">
+      import Chatbot from './web.js';
+      Chatbot.initFull({
+        chatflowid: '429636fd-3689-411d-a9ab-8f58424ba84a',
+        apiHost: 'https://paladinmansouri-flowiseai.hf.space',
+        speechToTextEndpointUrl: "http://ec2-54-157-59-164.compute-1.amazonaws.com:8000/stt",
+        textToSpeechEndpointUrl: "http://localhost:3001/text-to-speech/openai/tts-stream"
+      });
+    </script>
+    <flowise-fullchatbot></flowise-fullchatbot>
+  </body>
+</html>

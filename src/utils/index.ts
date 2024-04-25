@@ -35,6 +35,8 @@ export const sendRequest = async <ResponseData>(
       data = await response.json();
     } else if (typeof params !== 'string' && params.type === 'blob') {
       data = await response.blob();
+    } else if (typeof params !== 'string' && params.type === 'raw') {
+      data = response;
     } else {
       data = await response.text();
     }
