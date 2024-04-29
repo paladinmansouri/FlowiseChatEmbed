@@ -81,7 +81,7 @@ export const BotBubble = (props: Props) => {
       audio.src = URL.createObjectURL(mediaSource);
 
       mediaSource.addEventListener('sourceopen', function () {
-        const sourceBuffer = mediaSource.addSourceBuffer('audio/mpeg'); // Specify the correct MIME type
+        const sourceBuffer = mediaSource.addSourceBuffer('audio/wav');
 
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const reader = res.body!.getReader();
